@@ -9,6 +9,7 @@
 #include "twodee/QMatrix4.h"
 #include "twodee/QVector2.h"
 #include "twodee/ShaderProgram.h"
+#include "twodee/Trackball.h"
 #include "twodee/Trimesh.h"
 #include "twodee/VertexAttributes.h"
 #include "twodee/VertexArray.h"
@@ -28,6 +29,7 @@ class VertigoRenderer {
     void scroll(int nTicks);
 
     void load(const std::string &path);
+    void onKey(int key);
 
   private:
     td::Trimesh *mesh;
@@ -40,6 +42,10 @@ class VertigoRenderer {
     td::QMatrix4<float> projection;
     td::QMatrix4<float> modelview;
     td::QVector2<int> mouse_at;
+
+    td::Trackball trackball;
+
+    float factor;
 };
 
 #endif

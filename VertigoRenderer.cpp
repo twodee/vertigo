@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "VertigoRenderer.h"
+#include "twodee/Key.h"
 #include "twodee/NField.h"
 #include "twodee/QVector4.h"
 #include "twodee/QMath.h"
@@ -13,7 +14,9 @@ using namespace td;
 VertigoRenderer::VertigoRenderer() :
   attributes(NULL),
   array(NULL),
-  program(NULL) {
+  program(NULL),
+  trackball(),
+  factor(1) {
 }
 
 /* ------------------------------------------------------------------------- */
@@ -72,6 +75,31 @@ void VertigoRenderer::resize(int width, int height) {
   float window_aspect = width / (float) height;
 
   projection = QMatrix4<float>::GetPerspective(45.0f, window_aspect, 0.1f, 1000.0f);
+  trackball.SetViewport(width, height);
+}
+
+/* ------------------------------------------------------------------------- */
+
+void VertigoRenderer::onKey(int key) {
+  const float ROTATE_DELTA = 3.0f;
+
+  switch (key) {
+    case Key::HOME:
+      trackball.Reset();
+      break;
+    case Key::UP:
+      trackball.Rotate(-ROTATE_DELTA, QVector3<float>(1.0f, 0.0f, 0.0f));
+      break;
+    case Key::DOWN:
+      trackball.Rotate(ROTATE_DELTA, QVector3<float>(1.0f, 0.0f, 0.0f));
+      break;
+    case Key::LEFT:
+      trackball.Rotate(-ROTATE_DELTA, QVector3<float>(0.0f, 1.0f, 0.0f));
+      break;
+    case Key::RIGHT:
+      trackball.Rotate(ROTATE_DELTA, QVector3<float>(0.0f, 1.0f, 0.0f));
+      break;
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -79,9 +107,11 @@ void VertigoRenderer::resize(int width, int height) {
 void VertigoRenderer::render() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  QMatrix4<float> modelview2 = trackball.GetMatrix() * QMatrix4<float>::GetScale(factor, factor, 1.0f) * modelview;
+
   program->Bind();
   program->SetUniform("projection", projection);
-  program->SetUniform("modelview", modelview);
+  program->SetUniform("modelview", modelview2);
   array->Bind();
   array->DrawIndexed(GL_TRIANGLES);
   array->Unbind();
@@ -93,24 +123,26 @@ void VertigoRenderer::render() {
 /* ------------------------------------------------------------------------- */
 
 void VertigoRenderer::leftMouseDownAt(int x, int y) {
+  trackball.Start(x, y);
 }
 
 /* ------------------------------------------------------------------------- */
 
 void VertigoRenderer::leftMouseDraggedTo(int x, int y) {
+  trackball.Drag(x, y);
 }
 
 /* ------------------------------------------------------------------------- */
 
 void VertigoRenderer::leftMouseUpAt(int x, int y) {
+  trackball.Stop();
 }
 
 /* ------------------------------------------------------------------------- */
 
 void VertigoRenderer::scroll(int nTicks) {
   if (nTicks != 0) {
-    float factor = 1 + nTicks / 100.0f;;
-    modelview = QMatrix4<float>::GetScale(factor, factor, 1.0f) * modelview;
+    factor *= 1 + nTicks / 100.0f;;
   }
 }
 
